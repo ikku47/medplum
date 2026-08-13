@@ -57,9 +57,12 @@ Verified on 2026-08-13 with Playwright Chromium at 1440x900 and 1024x768 touch v
 npm run test:clinicbuddy --workspace=@medplum/e2e
 ```
 
-All six scenarios passed. The command starts isolated Medplum and ClinicBuddy development servers, verifies branded
-sign-in without horizontal overflow, authenticates the local administrator, opens the dashboard, and verifies the
-protected staff/access administration surface. On desktop and tablet it also drives a real patient appointment through
+All eight scenarios passed. The command starts isolated Medplum, ClinicBuddy clinic and ClinicBuddy patient-portal
+development servers, verifies branded sign-in without horizontal overflow, authenticates the local administrator,
+opens the dashboard, and verifies the protected staff/access administration surface. On desktop and tablet it also
+provisions a patient under the Project's authoritative default Patient policy, navigates their appointment, medication,
+result, document, invoice and secure message, proves cross-patient reads fail, and proves protected ABHA/MRN fields are
+restored rather than overwritten. It then drives a real staff-side patient appointment through
 arrival, check-in, vitals, waiting, clinician handoff with Encounter creation, diagnosis, UI clinical-note autosave,
 prescription, imaging order, encounter-linked follow-up, an INR 800 invoice, payment, printable receipt, billing handoff
 and completion. Earlier runs identified and fixed valid legacy administrator memberships with no profile or project
@@ -79,4 +82,5 @@ npm run test --workspace=@clinicbuddy/clinic -- \
 The portal unit suite validates rejection of staff profiles, patient injection into bookings, compartment-linked
 messages, invoice balance handling and appointment cancellation guards. Clinic tests validate the generated patient
 policy and idempotent installation as the tenant's default registration policy. Production builds pass for both the
-patient and clinic applications.
+patient and clinic applications. The full Playwright command above passes the patient portal on desktop and tablet as
+part of its eight-scenario gate.

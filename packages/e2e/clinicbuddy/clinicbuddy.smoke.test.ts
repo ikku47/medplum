@@ -107,10 +107,15 @@ test('patient portal enforces patient scope and presents the longitudinal record
   await page.getByRole('button', { name: 'Save clinic setup' }).click();
   await expect(page.getByText(/patient portal access policy are ready/i)).toBeVisible();
 
-  const policies = await searchResources<{ id: string }>(page, admin, 'AccessPolicy', {
-    _tag: 'https://clinicbuddy.health/fhir/identifier/access-policy|patient',
+  const projectResponse = await page.request.get(`${fhirBaseUrl}/Project/${projectId}`, {
+    headers: { Authorization: `Bearer ${admin.accessToken}` },
   });
-  expect(policies[0]?.id).toBeTruthy();
+  expect(projectResponse.ok(), await projectResponse.text()).toBe(true);
+  const configuredProject = (await projectResponse.json()) as {
+    defaultPatientAccessPolicy?: { reference?: string };
+  };
+  const patientPolicyReference = configuredProject.defaultPatientAccessPolicy?.reference;
+  expect(patientPolicyReference).toMatch(/^AccessPolicy\//);
 
   const suffix = `${testInfo.project.name.replace(/\W/g, '')}-${Date.now()}`;
   const email = `patient-${suffix}@example.com`.toLowerCase();
@@ -125,7 +130,7 @@ test('patient portal enforces patient scope and presents the longitudinal record
       password,
       sendEmail: false,
       scope: 'project',
-      membership: { accessPolicy: { reference: `AccessPolicy/${policies[0].id}` } },
+      membership: { accessPolicy: { reference: patientPolicyReference } },
     },
   });
   expect(inviteResponse.ok(), await inviteResponse.text()).toBe(true);
@@ -197,7 +202,7 @@ test('patient portal enforces patient scope and presents the longitudinal record
     }),
   ]);
 
-  await page.goto(`${patientPortalUrl}/signin`);
+  await page.goto(`${patientPortalUrl}/signin?project=${encodeURIComponent(projectId as string)}`);
   await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
   await page.getByPlaceholder('name@domain.com').fill(email);
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -237,7 +242,16 @@ test('patient portal enforces patient scope and presents the longitudinal record
       identifier: [{ system: 'https://healthid.ndhm.gov.in', value: '11-1111-1111-1111' }],
     },
   });
-  expect(protectedIdentifierWrite.ok()).toBe(false);
+  expect(protectedIdentifierWrite.ok(), await protectedIdentifierWrite.text()).toBe(true);
+  const protectedWriteResult = (await protectedIdentifierWrite.json()) as {
+    identifier?: { system?: string; value?: string }[];
+  };
+  expect(
+    protectedWriteResult.identifier?.some(
+      (identifier) =>
+        identifier.system === 'https://healthid.ndhm.gov.in' && identifier.value === '11-1111-1111-1111'
+    ) ?? false
+  ).toBe(false);
 
   const viewport = page.viewportSize();
   const bodyWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
