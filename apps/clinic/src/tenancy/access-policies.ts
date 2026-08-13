@@ -15,8 +15,8 @@ const writeInteractions = [...readInteractions, 'create', 'update'] as const;
 const adminInteractions = [...writeInteractions, 'delete'] as const;
 
 const permissionResources: Partial<Record<ClinicBuddyPermission, readonly string[]>> = {
-  'Patient.Read': ['Patient', 'RelatedPerson', 'Flag', 'AllergyIntolerance'],
-  'Patient.Write': ['Patient', 'RelatedPerson', 'Flag', 'AllergyIntolerance'],
+  'Patient.Read': ['Patient', 'RelatedPerson', 'Flag', 'AllergyIntolerance', 'Consent'],
+  'Patient.Write': ['Patient', 'RelatedPerson', 'Flag', 'AllergyIntolerance', 'Consent'],
   'Appointment.Read': ['Appointment', 'Schedule', 'Slot'],
   'Appointment.Manage': ['Appointment', 'Schedule', 'Slot'],
   'Queue.Read': ['Appointment', 'Encounter'],

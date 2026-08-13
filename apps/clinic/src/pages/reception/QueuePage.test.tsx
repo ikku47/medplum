@@ -28,7 +28,29 @@ describe('QueuePage', () => {
       ],
     };
     medplum.getProject = vi.fn().mockReturnValue({ resourceType: 'Project', id: 'clinic-1', features: [] });
-    medplum.searchResources = vi.fn().mockResolvedValue([appointment]);
+    medplum.searchResources = vi.fn().mockImplementation(async (resourceType) => {
+      if (resourceType === 'Location') {
+        return [
+          {
+            resourceType: 'Location',
+            id: 'room-1',
+            status: 'active',
+            name: 'Consultation Room 1',
+            type: [
+              {
+                coding: [
+                  {
+                    system: 'https://clinicbuddy.health/fhir/CodeSystem/location-kind',
+                    code: 'room',
+                  },
+                ],
+              },
+            ],
+          },
+        ];
+      }
+      return [appointment];
+    });
     medplum.updateResource = vi.fn().mockImplementation(async (resource) => resource);
   });
 
@@ -61,5 +83,25 @@ describe('QueuePage', () => {
       )
     );
     expect(await screen.findByText('Arrived')).toBeInTheDocument();
+  });
+
+  test('assigns a configured consultation room from the flow board', async () => {
+    const user = userEvent.setup();
+    await setup();
+    await screen.findByText('Asha Sharma');
+    await user.click(screen.getByLabelText('Room for Asha Sharma'));
+    await user.click(await screen.findByText('Consultation Room 1'));
+    await waitFor(() =>
+      expect(medplum.updateResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participant: expect.arrayContaining([
+            expect.objectContaining({
+              actor: { reference: 'Location/room-1', display: 'Consultation Room 1' },
+              status: 'accepted',
+            }),
+          ]),
+        })
+      )
+    );
   });
 });

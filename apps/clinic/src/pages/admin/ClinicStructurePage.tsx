@@ -31,6 +31,7 @@ import {
   CLINICBUDDY_APPOINTMENT_TYPE,
   CLINICBUDDY_LOCATION_KIND,
   getAppointmentDuration,
+  getAppointmentWorkingHours,
 } from '../../tenancy/clinic-configuration';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 
@@ -247,6 +248,9 @@ export function ClinicStructurePage(): JSX.Element {
                         <Text size="sm" c="dimmed">
                           {service.type?.[0]?.coding?.[0]?.code} · {getAppointmentDuration(service)} minutes
                         </Text>
+                        <Text size="xs" c="dimmed">
+                          {getAppointmentWorkingHours(service) ?? 'Working hours not configured'}
+                        </Text>
                       </div>
                       <Badge color={service.active === false ? 'gray' : 'teal'}>
                         {service.active === false ? 'inactive' : 'active'}
@@ -261,6 +265,11 @@ export function ClinicStructurePage(): JSX.Element {
               {appointmentTypes.length === 0 && (
                 <Text c="dimmed" ta="center">
                   No ClinicBuddy appointment types configured.
+                </Text>
+              )}
+              {appointmentTypes.length > 0 && (
+                <Text size="sm" c="dimmed" ta="center">
+                  Enable these appointment types from each practitioner calendar's Schedule settings.
                 </Text>
               )}
             </Stack>

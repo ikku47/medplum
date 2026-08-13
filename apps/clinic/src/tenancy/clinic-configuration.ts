@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { HealthcareService, Location, Organization, Reference } from '@medplum/fhirtypes';
+import { SchedulingParametersURI, schedulingDurationToMinutes } from '@medplum/core';
+import type { Extension, HealthcareService, Location, Organization, Reference } from '@medplum/fhirtypes';
 
 export const CLINICBUDDY_LOCATION_KIND = 'https://clinicbuddy.health/fhir/CodeSystem/location-kind';
 export const CLINICBUDDY_APPOINTMENT_TYPE = 'https://clinicbuddy.health/fhir/CodeSystem/appointment-type';
-export const CLINICBUDDY_SCHEDULING_EXTENSION = 'https://clinicbuddy.health/fhir/StructureDefinition/scheduling';
+
+export const INDIA_CLINIC_TIMEZONE = 'Asia/Kolkata';
+
+const DEFAULT_CLINIC_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export type ClinicLocationKind = 'department' | 'room';
 
@@ -47,11 +51,20 @@ export function buildAppointmentType(input: {
   durationMinutes: number;
   organization: Reference<Organization>;
   locations?: Reference<Location>[];
+  workingHours?: { daysOfWeek: readonly string[]; start: string; end: string };
 }): HealthcareService {
   const name = required(input.name, 'Appointment type name');
   const code = required(input.code, 'Appointment type code');
   if (!Number.isInteger(input.durationMinutes) || input.durationMinutes < 5 || input.durationMinutes > 480) {
     throw new Error('Appointment duration must be between 5 and 480 minutes.');
+  }
+  const workingHours = input.workingHours ?? {
+    daysOfWeek: DEFAULT_CLINIC_DAYS,
+    start: '09:00:00',
+    end: '18:00:00',
+  };
+  if (workingHours.daysOfWeek.length === 0 || workingHours.start >= workingHours.end) {
+    throw new Error('Appointment type working hours are invalid.');
   }
   return {
     resourceType: 'HealthcareService',
@@ -63,17 +76,53 @@ export function buildAppointmentType(input: {
     appointmentRequired: true,
     extension: [
       {
-        url: CLINICBUDDY_SCHEDULING_EXTENSION,
-        extension: [{ url: 'duration-minutes', valuePositiveInt: input.durationMinutes }],
+        url: SchedulingParametersURI,
+        extension: [
+          { url: 'duration', valueDuration: { value: input.durationMinutes, unit: 'min' } },
+          { url: 'alignmentInterval', valueDuration: { value: input.durationMinutes, unit: 'min' } },
+          { url: 'timezone', valueCode: INDIA_CLINIC_TIMEZONE },
+          {
+            url: 'availability',
+            extension: [
+              {
+                url: 'availableTime',
+                extension: [
+                  ...workingHours.daysOfWeek.map((day) => ({ url: 'daysOfWeek', valueCode: day })),
+                  { url: 'availableStartTime', valueTime: workingHours.start },
+                  { url: 'availableEndTime', valueTime: workingHours.end },
+                ],
+              },
+            ],
+          },
+        ],
       },
     ],
   };
 }
 
 export function getAppointmentDuration(service: HealthcareService): number | undefined {
-  return service.extension
-    ?.find((extension) => extension.url === CLINICBUDDY_SCHEDULING_EXTENSION)
-    ?.extension?.find((extension) => extension.url === 'duration-minutes')?.valuePositiveInt;
+  const parameters = getSchedulingParameters(service);
+  return schedulingDurationToMinutes(parameters?.extension?.find((extension) => extension.url === 'duration')?.valueDuration);
+}
+
+export function getAppointmentWorkingHours(service: HealthcareService): string | undefined {
+  const availableTime = getSchedulingParameters(service)
+    ?.extension?.find((extension) => extension.url === 'availability')
+    ?.extension?.find((extension) => extension.url === 'availableTime');
+  const days = availableTime?.extension
+    ?.filter((extension) => extension.url === 'daysOfWeek')
+    .map((extension) => extension.valueCode)
+    .filter((day): day is string => !!day);
+  const start = availableTime?.extension?.find((extension) => extension.url === 'availableStartTime')?.valueTime;
+  const end = availableTime?.extension?.find((extension) => extension.url === 'availableEndTime')?.valueTime;
+  if (!days?.length || !start || !end) {
+    return undefined;
+  }
+  return `${days.join(', ')} ${start.slice(0, 5)}-${end.slice(0, 5)}`;
+}
+
+function getSchedulingParameters(service: HealthcareService): Extension | undefined {
+  return service.extension?.find((extension) => extension.url === SchedulingParametersURI);
 }
 
 function required(value: string, field: string): string {

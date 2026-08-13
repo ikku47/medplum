@@ -68,6 +68,7 @@ describe('CreateVisit', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Patient/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Appointment type/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Start Time/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/End Time/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Class/i)).toBeInTheDocument();

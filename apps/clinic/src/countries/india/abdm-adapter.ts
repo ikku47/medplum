@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Consent, Patient } from '@medplum/fhirtypes';
+import { isValidAbdmConsent } from './consent';
 
 export interface AbdmExchangeContext {
   tenantId: string;
@@ -23,6 +24,15 @@ export class DisabledIndiaAbdmAdapter implements IndiaAbdmAdapter {
 
   async pushHealthInformation(_context: AbdmExchangeContext, _bundle: Bundle): Promise<{ transactionId: string }> {
     throw disabledError();
+  }
+}
+
+export function requireValidAbdmExchangeContext(context: AbdmExchangeContext, at: Date = new Date()): void {
+  if (!context.tenantId.trim()) {
+    throw new Error('ABDM exchange requires an active tenant context.');
+  }
+  if (!isValidAbdmConsent(context.consent, context.patient, at)) {
+    throw new Error('ABDM exchange requires active, verified patient consent for health information exchange.');
   }
 }
 

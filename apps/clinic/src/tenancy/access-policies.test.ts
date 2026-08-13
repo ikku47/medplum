@@ -8,6 +8,7 @@ describe('ClinicBuddy access policies', () => {
   test('gives reception appointment writes without clinical note writes', () => {
     const policy = buildClinicBuddyAccessPolicy('receptionist');
     expect(policy.resource?.find((rule) => rule.resourceType === 'Appointment')?.interaction).toContain('update');
+    expect(policy.resource?.find((rule) => rule.resourceType === 'Consent')?.interaction).toContain('update');
     expect(policy.resource?.find((rule) => rule.resourceType === 'ClinicalImpression')).toBeUndefined();
   });
 

@@ -19,14 +19,15 @@ import {
   Title,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import type { Questionnaire } from '@medplum/fhirtypes';
+import type { Organization, Questionnaire } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconForms, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconForms, IconPackageImport, IconPlus, IconTrash } from '@tabler/icons-react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { ClinicalFormItemInput, ClinicalFormItemType } from '../../clinical/forms';
 import { buildClinicalForm, CLINICBUDDY_FORM_IDENTIFIER } from '../../clinical/forms';
+import { CLINICBUDDY_SPECIALTY_PACK_TAG, installGeneralPracticePack } from '../../clinical/specialty-packs';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 
 const fieldTypes: { value: ClinicalFormItemType; label: string }[] = [
@@ -43,6 +44,9 @@ export function ClinicalConfigurationPage(): JSX.Element {
   const medplum = useMedplum();
   const [forms, setForms] = useState<WithId<Questionnaire>[]>([]);
   const [templateCount, setTemplateCount] = useState(0);
+  const [organization, setOrganization] = useState<WithId<Organization>>();
+  const [packArtifacts, setPackArtifacts] = useState(0);
+  const [installingPack, setInstallingPack] = useState(false);
   const [loading, setLoading] = useState(true);
   const [opened, setOpened] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,9 +58,12 @@ export function ClinicalConfigurationPage(): JSX.Element {
     let active = true;
     async function load(): Promise<void> {
       try {
-        const [questionnaires, templates] = await Promise.all([
+        const [questionnaires, templates, organizations, appointmentTypes, services] = await Promise.all([
           medplum.searchResources('Questionnaire', { _count: '200', _sort: 'title' }),
           medplum.searchResources('PlanDefinition', { _count: '200', status: 'active' }),
+          medplum.searchResources('Organization', { _count: '20', active: 'true' }),
+          medplum.searchResources('HealthcareService', { _count: '200' }),
+          medplum.searchResources('ChargeItemDefinition', { _count: '200' }),
         ]);
         if (active) {
           setForms(
@@ -65,6 +72,14 @@ export function ClinicalConfigurationPage(): JSX.Element {
             )
           );
           setTemplateCount(templates.length);
+          setOrganization(organizations[0]);
+          setPackArtifacts(
+            [...questionnaires, ...templates, ...appointmentTypes, ...services].filter((resource) =>
+              resource.meta?.tag?.some(
+                (tag) => tag.system === CLINICBUDDY_SPECIALTY_PACK_TAG && tag.code === 'general-practice'
+              )
+            ).length
+          );
         }
       } catch (error) {
         showErrorNotification(error);
@@ -109,6 +124,43 @@ export function ClinicalConfigurationPage(): JSX.Element {
     }
   };
 
+  const installPack = async (): Promise<void> => {
+    if (!organization) {
+      showErrorNotification(new Error('Configure the clinic organization before installing a specialty pack.'));
+      return;
+    }
+    setInstallingPack(true);
+    try {
+      const result = await installGeneralPracticePack(medplum, organization);
+      const [questionnaires, templates] = await Promise.all([
+        medplum.searchResources('Questionnaire', { _count: '200', _sort: 'title' }),
+        medplum.searchResources('PlanDefinition', { _count: '200', status: 'active' }),
+      ]);
+      setForms(
+        questionnaires.filter((form) =>
+          form.identifier?.some((identifier) => identifier.system === CLINICBUDDY_FORM_IDENTIFIER)
+        )
+      );
+      setTemplateCount(templates.length);
+      setPackArtifacts(result.total);
+      showSuccessNotification({
+        title: 'General Practice pack ready',
+        message: result.created > 0 ? `${result.created} clinic artifacts installed.` : 'All artifacts already existed.',
+      });
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setInstallingPack(false);
+    }
+  };
+
+  let packButtonLabel = 'Install pack';
+  if (packArtifacts === 11) {
+    packButtonLabel = 'Verify installation';
+  } else if (packArtifacts > 0) {
+    packButtonLabel = 'Repair installation';
+  }
+
   return (
     <Container size="lg" py="xl">
       <Stack gap="xl">
@@ -134,6 +186,31 @@ export function ClinicalConfigurationPage(): JSX.Element {
           <Text size="sm" c="dimmed">
             PlanDefinitions are selectable when a new encounter is created.
           </Text>
+        </Card>
+        <Card withBorder radius="lg">
+          <Group justify="space-between" align="center">
+            <Group gap="md">
+              <IconPackageImport size={32} color="var(--mantine-primary-color-filled)" />
+              <div>
+                <Group gap="xs">
+                  <Text fw={800}>General Practice starter pack</Text>
+                  <Badge color={packArtifacts === 11 ? 'teal' : 'blue'}>
+                    {packArtifacts === 11 ? 'installed' : `${packArtifacts}/11 artifacts`}
+                  </Badge>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Consultation and follow-up forms, care templates, appointment types and INR billing services.
+                </Text>
+              </div>
+            </Group>
+            <Button
+              variant={packArtifacts === 11 ? 'light' : 'filled'}
+              loading={installingPack}
+              onClick={installPack}
+            >
+              {packButtonLabel}
+            </Button>
+          </Group>
         </Card>
         {loading ? (
           <Group justify="center" py="xl">

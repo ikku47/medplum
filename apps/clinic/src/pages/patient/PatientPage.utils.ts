@@ -97,6 +97,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'DocumentReference',
     label: 'Documents',
   },
+  { id: 'consent', url: 'Consent', label: 'Consent' },
   {
     id: 'careplan',
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',

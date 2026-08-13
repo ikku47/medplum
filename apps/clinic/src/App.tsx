@@ -72,6 +72,7 @@ import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
+import { PatientConsentsPage } from './pages/patient/PatientConsentsPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
@@ -350,6 +351,7 @@ export function App(): JSX.Element | null {
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
                 <Route path="DocumentReference" element={<DocumentsPage />} />
                 <Route path="DocumentReference/:documentId" element={<DocumentsPage />} />
+                <Route path="Consent" element={<PatientConsentsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />

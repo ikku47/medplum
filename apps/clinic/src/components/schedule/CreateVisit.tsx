@@ -2,13 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Flex, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import type { Coding, Patient, PlanDefinition, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type {
+  Coding,
+  HealthcareService,
+  Patient,
+  PlanDefinition,
+  Practitioner,
+  Reference,
+  Schedule,
+} from '@medplum/fhirtypes';
 import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Range } from '../../types/scheduling';
+import { getAppointmentDuration } from '../../tenancy/clinic-configuration';
 import { createAppointment, createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
@@ -24,6 +34,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   const [patient, setPatient] = useState<Patient | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
+  const [appointmentType, setAppointmentType] = useState<WithId<HealthcareService> | undefined>();
   const [start, setStart] = useState(appointmentSlot?.start);
   const [end, setEnd] = useState(appointmentSlot?.end);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +77,15 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     }
     setIsLoading(true);
     try {
-      const appointment = await createAppointment(medplum, start, end, patient, props.practitioner, schedule);
+      const appointment = await createAppointment(
+        medplum,
+        start,
+        end,
+        patient,
+        props.practitioner,
+        schedule,
+        appointmentType
+      );
       const encounter = await createEncounter(
         medplum,
         encounterClass,
@@ -112,6 +131,20 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
             onChange={(value) => setPatient(value as Patient)}
           />
 
+          <ResourceInput<WithId<HealthcareService>>
+            label="Appointment type"
+            resourceType="HealthcareService"
+            name="HealthcareService-id"
+            searchCriteria={{ active: 'true' }}
+            onChange={(value) => {
+              setAppointmentType(value);
+              const duration = value && getAppointmentDuration(value);
+              if (duration && start && !Number.isNaN(start.getTime())) {
+                setEnd(new Date(start.getTime() + duration * 60 * 1000));
+              }
+            }}
+          />
+
           <DateTimeInput
             name="start"
             label="Start Time"
@@ -123,9 +156,10 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
           />
 
           <DateTimeInput
+            key={appointmentType?.id ?? 'no-appointment-type'}
             name="end"
             label="End Time"
-            defaultValue={appointmentSlot?.end?.toISOString()}
+            defaultValue={end && !Number.isNaN(end.getTime()) ? end.toISOString() : undefined}
             required={true}
             onChange={(value) => {
               setEnd(new Date(value));

@@ -46,13 +46,14 @@ transmitted until the clinic configures its own provider credentials and explici
 
 ## Desktop and tablet browser gate
 
-Verified on 2026-08-12 with Playwright Chromium at 1440x900 and 1024x768 touch viewport:
+Verified on 2026-08-13 with Playwright Chromium at 1440x900 and 1024x768 touch viewport:
 
 ```sh
 npm run test:clinicbuddy --workspace=@medplum/e2e
 ```
 
-All four scenarios passed. The command starts isolated Medplum and ClinicBuddy development servers, verifies branded
+All six scenarios passed. The command starts isolated Medplum and ClinicBuddy development servers, verifies branded
 sign-in without horizontal overflow, authenticates the local administrator, opens the dashboard, and verifies the
-protected staff/access administration surface. The run also identified and fixed valid legacy administrator
-memberships with no profile or project reference.
+protected staff/access administration surface. On desktop and tablet it also drives a real patient appointment through
+arrival, check-in, vitals, waiting, clinician handoff with Encounter creation, billing, and completion. Earlier runs
+identified and fixed valid legacy administrator memberships with no profile or project reference.

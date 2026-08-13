@@ -6,6 +6,7 @@ import type {
   Appointment,
   Coding,
   Encounter,
+  HealthcareService,
   Patient,
   PlanDefinition,
   Practitioner,
@@ -99,6 +100,48 @@ describe('encounter utils', () => {
       expect(appointment.slot).toMatchObject([{ reference: `Slot/${slotCreations[0].id}` }]);
     });
 
+    test('links the appointment type and service location to the appointment and busy slot', async () => {
+      const createdResources: any[] = [];
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        const result = { ...resource, id: `${resource.resourceType}-${createdResources.length + 1}` };
+        createdResources.push(result);
+        return result;
+      });
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 'sched-1',
+        actor: [{ reference: 'Practitioner/prac-1' }],
+      };
+      const service: WithId<HealthcareService> = {
+        resourceType: 'HealthcareService',
+        id: 'consultation',
+        name: 'Consultation',
+        type: [{ coding: [{ code: 'CONSULT' }], text: 'Consultation' }],
+        location: [{ reference: 'Location/room-1', display: 'Consultation room 1' }],
+      };
+
+      const appointment = await createAppointment(
+        medplum,
+        new Date('2025-01-01T10:00:00Z'),
+        new Date('2025-01-01T10:30:00Z'),
+        patient,
+        practitioner,
+        schedule,
+        service
+      );
+
+      expect(appointment.serviceType?.[0]?.extension?.[0]?.valueReference?.reference).toBe(
+        'HealthcareService/consultation'
+      );
+      expect(appointment.participant).toContainEqual({
+        actor: { reference: 'Location/room-1', display: 'Consultation room 1' },
+        status: 'accepted',
+      });
+      expect(createdResources.find((resource) => resource.resourceType === 'Slot')?.serviceType).toEqual(
+        appointment.serviceType
+      );
+    });
+
     test('does not create a Slot when schedule is not provided', async () => {
       const createdResources: any[] = [];
       vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
@@ -116,6 +159,25 @@ describe('encounter utils', () => {
       );
       expect(appointment.slot).toBeUndefined();
       expect(createdResources.filter((r) => r.resourceType === 'Slot')).toHaveLength(0);
+    });
+
+    test('links a follow-up appointment to its originating encounter', async () => {
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => ({
+        ...resource,
+        id: `${resource.resourceType}-1`,
+      }));
+      const appointment = await createAppointment(
+        medplum,
+        new Date('2025-01-08T10:00:00Z'),
+        new Date('2025-01-08T10:15:00Z'),
+        patient,
+        practitioner,
+        undefined,
+        undefined,
+        { originatingEncounter: { reference: 'Encounter/enc-1' }, reason: 'Review blood pressure' }
+      );
+      expect(appointment.supportingInformation).toEqual([{ reference: 'Encounter/enc-1' }]);
+      expect(appointment.reasonCode).toEqual([{ text: 'Review blood pressure' }]);
     });
   });
 

@@ -8,6 +8,7 @@ import {
   HTTP_HL7_ORG,
   isReference,
   isResource,
+  toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -15,6 +16,7 @@ import type {
   ClinicalImpression,
   Coding,
   Encounter,
+  HealthcareService,
   Patient,
   PlanDefinition,
   Practitioner,
@@ -31,10 +33,13 @@ export async function createAppointment(
   end: Date,
   patient: Patient | Reference<Patient>,
   practitioner: Practitioner | Reference<Practitioner>,
-  schedule?: Schedule
+  schedule?: Schedule,
+  healthcareService?: WithId<HealthcareService>,
+  details?: { originatingEncounter?: Reference<Encounter>; reason?: string }
 ): Promise<Appointment> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
   const patientRef = isResource(patient) ? createReference(patient) : patient;
+  const serviceType = healthcareService ? toServiceTypeCodeableConcepts(healthcareService) : undefined;
 
   // If we have a schedule reference, add a busy slot to prevent future
   // scheduling operations (such as $find or $book) from thinking this
@@ -47,6 +52,7 @@ export async function createAppointment(
       end: end.toISOString(),
       schedule: createReference(schedule),
       status: 'busy',
+      serviceType,
     });
   }
 
@@ -56,6 +62,9 @@ export async function createAppointment(
     start: start.toISOString(),
     end: end.toISOString(),
     slot: slot ? [createReference(slot)] : undefined,
+    serviceType,
+    supportingInformation: details?.originatingEncounter ? [details.originatingEncounter] : undefined,
+    reasonCode: details?.reason?.trim() ? [{ text: details.reason.trim() }] : undefined,
     participant: [
       {
         actor: patientRef,
@@ -65,6 +74,7 @@ export async function createAppointment(
         actor: practitionerRef,
         status: 'accepted',
       },
+      ...(healthcareService?.location?.map((actor) => ({ actor, status: 'accepted' as const })) ?? []),
     ],
   });
 

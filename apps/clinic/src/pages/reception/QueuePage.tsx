@@ -12,6 +12,7 @@ import {
   Menu,
   Paper,
   ScrollArea,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -19,7 +20,7 @@ import {
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { parseReference } from '@medplum/core';
-import type { Appointment, Bundle, Reference } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Location, Reference } from '@medplum/fhirtypes';
 import { ResourceName, useMedplum, useResourceModified, useSubscription } from '@medplum/react';
 import {
   IconChevronLeft,
@@ -45,6 +46,7 @@ import {
   transitionAppointment,
 } from '../../reception/queue';
 import { showErrorNotification } from '../../utils/notifications';
+import { CLINICBUDDY_LOCATION_KIND } from '../../tenancy/clinic-configuration';
 import { VitalsModal } from './VitalsModal';
 
 interface QueueColumn {
@@ -90,6 +92,7 @@ export function QueuePage(): JSX.Element {
   const medplum = useMedplum();
   const [day, setDay] = useState(() => startOfDay(new Date()));
   const [appointments, setAppointments] = useState<WithId<Appointment>[]>([]);
+  const [rooms, setRooms] = useState<WithId<Location>[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string>();
   const [vitalsAppointment, setVitalsAppointment] = useState<WithId<Appointment>>();
@@ -117,6 +120,20 @@ export function QueuePage(): JSX.Element {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loading is synchronized with the selected queue day
     loadAppointments().catch(showErrorNotification);
   }, [loadAppointments]);
+
+  useEffect(() => {
+    medplum.searchResources('Location', { status: 'active', _count: '200' }).then(
+      (locations) =>
+        setRooms(
+          locations.filter((location) =>
+            location.type?.some((type) =>
+              type.coding?.some((coding) => coding.system === CLINICBUDDY_LOCATION_KIND && coding.code === 'room')
+            )
+          )
+        ),
+      showErrorNotification
+    );
+  }, [medplum]);
 
   useEffect(() => {
     const refreshTimer = window.setInterval(() => loadAppointments().catch(showErrorNotification), 30_000);
@@ -152,6 +169,25 @@ export function QueuePage(): JSX.Element {
         return;
       }
       const saved = await medplum.updateResource(transitionAppointment(appointment, target));
+      setAppointments((current) => replaceAppointment(current, saved, range));
+    } catch (error) {
+      showErrorNotification(error);
+    } finally {
+      setUpdatingId(undefined);
+    }
+  };
+
+  const handleAssignRoom = async (appointment: WithId<Appointment>, reference: string | null): Promise<void> => {
+    setUpdatingId(appointment.id);
+    try {
+      const room = rooms.find((item) => `Location/${item.id}` === reference);
+      const participants = appointment.participant.filter(
+        (participant) => !participant.actor?.reference?.startsWith('Location/')
+      );
+      if (room) {
+        participants.push({ actor: { reference: `Location/${room.id}`, display: room.name }, status: 'accepted' });
+      }
+      const saved = await medplum.updateResource({ ...appointment, participant: participants });
       setAppointments((current) => replaceAppointment(current, saved, range));
     } catch (error) {
       showErrorNotification(error);
@@ -217,6 +253,8 @@ export function QueuePage(): JSX.Element {
                           loading={updatingId === appointment.id}
                           onTransition={(target) => handleTransition(appointment, target)}
                           onRecordVitals={() => setVitalsAppointment(appointment)}
+                          rooms={rooms}
+                          onAssignRoom={(reference) => handleAssignRoom(appointment, reference)}
                         />
                       ))}
                       {columnAppointments.length === 0 && (
@@ -249,6 +287,8 @@ function QueueCard(props: {
   loading: boolean;
   onTransition: (target: ClinicFlowStage) => Promise<void>;
   onRecordVitals: () => void;
+  rooms: WithId<Location>[];
+  onAssignRoom: (reference: string | null) => Promise<void>;
 }): JSX.Element {
   const { appointment } = props;
   const stage = getAppointmentFlowStage(appointment);
@@ -308,11 +348,18 @@ function QueueCard(props: {
           )}
         </Group>
 
-        {location?.display && (
-          <Text size="xs" c="dimmed">
-            {location.display}
-          </Text>
-        )}
+        <Select
+          size="xs"
+          label="Room"
+          aria-label={`Room for ${patient?.display ?? 'patient'}`}
+          placeholder="Unassigned"
+          clearable
+          searchable
+          disabled={props.loading || isTerminalStage(stage)}
+          data={props.rooms.map((room) => ({ value: `Location/${room.id}`, label: room.name ?? room.id }))}
+          value={location?.reference ?? null}
+          onChange={props.onAssignRoom}
+        />
 
         {stage === 'vitals' && (
           <Button fullWidth size="xs" onClick={props.onRecordVitals}>
