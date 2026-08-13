@@ -56,6 +56,8 @@ export function UploadDocumentModal({ opened, onClose, patient, onCreated }: Upl
         data: file,
         contentType: file.type,
         filename: file.name,
+        // Propagate the patient's compartment to the Binary so portal access stays patient-scoped.
+        securityContext: createReference(patientResource),
       });
 
       const doc = await medplum.createResource<DocumentReference>({

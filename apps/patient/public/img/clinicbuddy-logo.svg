@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title description">
+  <title id="title">ClinicBuddy logo</title>
+  <desc id="description">A rounded teal speech bubble with a white medical cross and a warm accent.</desc>
+  <defs>
+    <linearGradient id="bubble" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#128678" />
+      <stop offset="1" stop-color="#075450" />
+    </linearGradient>
+  </defs>
+  <path fill="url(#bubble)" d="M12 7h40a7 7 0 0 1 7 7v30a7 7 0 0 1-7 7H31L18.2 59.5A3.2 3.2 0 0 1 13 57V51h-1a7 7 0 0 1-7-7V14a7 7 0 0 1 7-7Z" />
+  <path fill="#fff" d="M28 16h8v10h10v8H36v10h-8V34H18v-8h10V16Z" />
+  <circle cx="51" cy="13" r="6" fill="#f1a55b" stroke="#fff" stroke-width="3" />
+</svg>

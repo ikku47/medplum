@@ -38,5 +38,12 @@ export default defineConfig({
       timeout: 120_000,
       reuseExistingServer: !process.env['CI'],
     },
+    {
+      command:
+        'MEDPLUM_BASE_URL=http://127.0.0.1:8104/ npm run dev --workspace=@clinicbuddy/patient -- --host 127.0.0.1 --port 3103',
+      url: 'http://127.0.0.1:3103/signin',
+      timeout: 120_000,
+      reuseExistingServer: !process.env['CI'],
+    },
   ],
 });

@@ -60,6 +60,10 @@ const writePermissions = new Set<ClinicBuddyPermission>([
 ]);
 
 export function buildClinicBuddyAccessPolicy(role: ClinicBuddyRole): AccessPolicy {
+  if (role === 'patient') {
+    return buildClinicBuddyPatientAccessPolicy();
+  }
+
   if (role === 'super-admin' || role === 'organization-admin' || role === 'clinic-admin') {
     return {
       resourceType: 'AccessPolicy',
@@ -95,6 +99,112 @@ export function buildClinicBuddyAccessPolicy(role: ClinicBuddyRole): AccessPolic
     resource: [...interactions.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([resourceType, allowed]) => ({ resourceType, interaction: [...allowed] })),
+  };
+}
+
+/**
+ * Patient access is deliberately separate from staff RBAC. Every clinical and financial rule is
+ * constrained to the authenticated Patient profile; shared scheduling/catalog resources are read-only.
+ */
+export function buildClinicBuddyPatientAccessPolicy(): AccessPolicy {
+  const patientReadResources = [
+    'AllergyIntolerance',
+    'Binary',
+    'CarePlan',
+    'Condition',
+    'Consent',
+    'Coverage',
+    'DiagnosticReport',
+    'DocumentReference',
+    'Encounter',
+    'Immunization',
+    'Invoice',
+    'MedicationRequest',
+    'MedicationStatement',
+    'Observation',
+    'Procedure',
+    'ServiceRequest',
+  ];
+  const sharedReadResources = [
+    'HealthcareService',
+    'Location',
+    'Medication',
+    'Organization',
+    'Practitioner',
+    'PractitionerRole',
+    'Questionnaire',
+    'Schedule',
+  ];
+
+  return {
+    resourceType: 'AccessPolicy',
+    name: 'ClinicBuddy Patient',
+    meta: { tag: [{ system: CLINICBUDDY_ACCESS_POLICY_IDENTIFIER, code: 'patient' }] },
+    compartment: { reference: '%patient' },
+    resource: [
+      {
+        resourceType: 'Patient',
+        criteria: 'Patient?_id=%patient.id',
+        interaction: [...readInteractions],
+      },
+      {
+        resourceType: 'Patient',
+        criteria: 'Patient?_id=%patient.id',
+        interaction: ['update'],
+        readonlyFields: ['active', 'generalPractitioner', 'identifier', 'link', 'managingOrganization'],
+      },
+      ...patientReadResources.map((resourceType) => ({
+        resourceType,
+        criteria: `${resourceType}?_compartment=%patient`,
+        interaction: [...readInteractions],
+      })),
+      {
+        resourceType: 'Appointment',
+        criteria: 'Appointment?_compartment=%patient',
+        interaction: [...readInteractions, 'create'],
+      },
+      {
+        resourceType: 'Appointment',
+        criteria: 'Appointment?_compartment=%patient',
+        interaction: ['update'],
+        readonlyFields: [
+          'appointmentType',
+          'basedOn',
+          'end',
+          'participant',
+          'serviceCategory',
+          'serviceType',
+          'slot',
+          'specialty',
+          'start',
+          'supportingInformation',
+        ],
+      },
+      {
+        resourceType: 'Communication',
+        criteria: 'Communication?recipient=%patient',
+        interaction: [...readInteractions],
+      },
+      {
+        resourceType: 'Communication',
+        criteria: 'Communication?sender=%patient',
+        interaction: [...writeInteractions],
+      },
+      {
+        resourceType: 'QuestionnaireResponse',
+        criteria: 'QuestionnaireResponse?_compartment=%patient',
+        interaction: [...writeInteractions],
+      },
+      {
+        // The scheduling $book operation creates PHI-free busy slots atomically.
+        resourceType: 'Slot',
+        interaction: ['search', 'read', 'create'],
+      },
+      ...sharedReadResources.map((resourceType) => ({
+        resourceType,
+        interaction: [...readInteractions],
+      })),
+    ],
   };
 }
 

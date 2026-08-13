@@ -6,6 +6,7 @@ import { useMedplum } from '@medplum/react';
 import { IconBuildingHospital, IconDeviceFloppy } from '@tabler/icons-react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { configurePatientPortalAccess } from '../../tenancy/patient-portal';
 import {
   buildClinicFacility,
   buildClinicOrganization,
@@ -129,11 +130,16 @@ export function OrganizationSetupPage(): JSX.Element {
         ? await medplum.updateResource(facilityInput)
         : await medplum.createResource(facilityInput);
 
+      if (!project.id) {
+        throw new Error('The ClinicBuddy tenant project is missing an id.');
+      }
+      await configurePatientPortalAccess(medplum, { ...project, id: project.id });
+
       setOrganization(savedOrganization);
       setFacility(savedFacility);
       showSuccessNotification({
         title: 'Clinic configured',
-        message: 'Your organization and primary India facility are ready.',
+        message: 'Your organization, India facility, and patient portal access policy are ready.',
       });
     } catch (error) {
       showErrorNotification(error);

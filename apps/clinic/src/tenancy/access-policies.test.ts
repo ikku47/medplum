@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProjectMembership } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
-import { applyClinicBuddyMembershipAccess, buildClinicBuddyAccessPolicy } from './access-policies';
+import {
+  applyClinicBuddyMembershipAccess,
+  buildClinicBuddyAccessPolicy,
+  buildClinicBuddyPatientAccessPolicy,
+} from './access-policies';
 
 describe('ClinicBuddy access policies', () => {
   test('gives reception appointment writes without clinical note writes', () => {
@@ -51,5 +55,42 @@ describe('ClinicBuddy access policies', () => {
     expect(
       applyClinicBuddyMembershipAccess(membership, 'doctor', { reference: 'AccessPolicy/doctor' }, []).active
     ).toBe(false);
+  });
+
+  test('confines patients to their own FHIR compartment', () => {
+    const policy = buildClinicBuddyPatientAccessPolicy();
+    const patientReadRule = policy.resource?.find(
+      (rule) => rule.resourceType === 'Patient' && rule.interaction?.includes('read')
+    );
+    const patientUpdateRule = policy.resource?.find(
+      (rule) => rule.resourceType === 'Patient' && rule.interaction?.includes('update')
+    );
+    const invoiceRule = policy.resource?.find((rule) => rule.resourceType === 'Invoice');
+    const binaryRule = policy.resource?.find((rule) => rule.resourceType === 'Binary');
+    const appointmentUpdateRule = policy.resource?.find(
+      (rule) => rule.resourceType === 'Appointment' && rule.interaction?.includes('update')
+    );
+    const receivedMessageRule = policy.resource?.find(
+      (rule) => rule.resourceType === 'Communication' && rule.criteria?.includes('recipient')
+    );
+    const sentMessageRule = policy.resource?.find(
+      (rule) => rule.resourceType === 'Communication' && rule.criteria?.includes('sender')
+    );
+
+    expect(policy.compartment?.reference).toBe('%patient');
+    expect(patientReadRule?.criteria).toBe('Patient?_id=%patient.id');
+    expect(patientUpdateRule?.readonlyFields).toContain('identifier');
+    expect(patientUpdateRule?.interaction).not.toContain('create');
+    expect(invoiceRule?.criteria).toBe('Invoice?_compartment=%patient');
+    expect(binaryRule?.criteria).toBe('Binary?_compartment=%patient');
+    expect(appointmentUpdateRule?.readonlyFields).toContain('participant');
+    expect(appointmentUpdateRule?.readonlyFields).toContain('slot');
+    expect(receivedMessageRule?.interaction).not.toContain('update');
+    expect(sentMessageRule?.interaction).toContain('create');
+    expect(policy.resource?.find((rule) => rule.resourceType === 'PaymentReconciliation')).toBeUndefined();
+  });
+
+  test('uses the scoped policy for the patient role', () => {
+    expect(buildClinicBuddyAccessPolicy('patient')).toEqual(buildClinicBuddyPatientAccessPolicy());
   });
 });

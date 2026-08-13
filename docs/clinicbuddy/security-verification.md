@@ -31,7 +31,12 @@ ClinicBuddy generates a Medplum `AccessPolicy` per staff role. Project administr
 other staff receive only resource interactions implied by the ClinicBuddy permission matrix. Facility references are
 stored as membership access parameters for progressive multi-facility scoping.
 
-The role policy tests prove that reception cannot write clinical notes and doctors cannot manage payments.
+The role policy tests prove that reception cannot write clinical notes and doctors cannot manage payments. Patient
+members use a separate policy: the authenticated `%patient` profile constrains Patient, appointments, encounters,
+clinical records, results, invoices, messages, documents and Binary attachments to that patient's compartment.
+Patient profile updates cannot modify identifiers, clinic ownership, links or assigned clinicians; appointment updates
+cannot rewrite the clinician, service, slot or visit time. Tenant setup installs this policy as the project's default
+Patient registration policy.
 
 ## External transmission
 
@@ -55,5 +60,23 @@ npm run test:clinicbuddy --workspace=@medplum/e2e
 All six scenarios passed. The command starts isolated Medplum and ClinicBuddy development servers, verifies branded
 sign-in without horizontal overflow, authenticates the local administrator, opens the dashboard, and verifies the
 protected staff/access administration surface. On desktop and tablet it also drives a real patient appointment through
-arrival, check-in, vitals, waiting, clinician handoff with Encounter creation, billing, and completion. Earlier runs
-identified and fixed valid legacy administrator memberships with no profile or project reference.
+arrival, check-in, vitals, waiting, clinician handoff with Encounter creation, diagnosis, UI clinical-note autosave,
+prescription, imaging order, encounter-linked follow-up, an INR 800 invoice, payment, printable receipt, billing handoff
+and completion. Earlier runs identified and fixed valid legacy administrator memberships with no profile or project
+reference.
+
+## Patient portal gate
+
+Verified on 2026-08-13:
+
+```sh
+npm run test --workspace=@clinicbuddy/patient
+npm run build --workspace=@clinicbuddy/patient
+npm run test --workspace=@clinicbuddy/clinic -- \
+  src/tenancy/access-policies.test.ts src/tenancy/patient-portal.test.ts
+```
+
+The portal unit suite validates rejection of staff profiles, patient injection into bookings, compartment-linked
+messages, invoice balance handling and appointment cancellation guards. Clinic tests validate the generated patient
+policy and idempotent installation as the tenant's default registration policy. Production builds pass for both the
+patient and clinic applications.
