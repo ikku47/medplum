@@ -23,6 +23,7 @@
   "scripts": {
     "playwright:codegen": "npx playwright codegen http://localhost:3000",
     "playwright:install": "npx playwright install --with-deps chromium",
+    "test:clinicbuddy": "npx playwright test --config clinicbuddy/clinicbuddy.playwright.config.ts",
     "test:smoke": "npx playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
   },
   "devDependencies": {

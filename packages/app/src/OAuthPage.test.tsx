@@ -98,8 +98,8 @@ describe('OAuthPage', () => {
 
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
-    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByText('Medplum Logo')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to ClinicBuddy')).toBeInTheDocument();
+    expect(screen.getByAltText('ClinicBuddy Logo')).toBeInTheDocument();
   });
 
   test('Fetch logo and render default welcome string', async () => {
@@ -110,7 +110,7 @@ describe('OAuthPage', () => {
 
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
-    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to ClinicBuddy')).toBeInTheDocument();
     const logo = screen.getByAltText('Welcome Logo');
     expect(logo).toBeInTheDocument();
   });

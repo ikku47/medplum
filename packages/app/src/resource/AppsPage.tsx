@@ -22,10 +22,7 @@ export function AppsPage(): JSX.Element | null {
     return (
       <Document>
         <Title>Apps</Title>
-        <p>
-          No apps found. Contact your administrator or <a href="mailto:support@medplum.com">Medplum Support</a> to add
-          automation here.
-        </p>
+        <p>No apps found. Contact your ClinicBuddy administrator to add automation here.</p>
       </Document>
     );
   }

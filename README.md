@@ -1,16 +1,18 @@
-# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10900/badge?gold)](https://www.bestpractices.dev/projects/10900)
+# ClinicBuddy
 
-![Medplum](packages/docs/static/img/cover.webp)
+![ClinicBuddy logo](packages/app/static/img/clinical-buddy-logo.svg)
 
-Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
+ClinicBuddy is a secure clinical workspace for healthcare teams. It brings patient records, orders, forms,
+diagnostic workflows, scheduling, and operational tools into one FHIR-native application.
 
-- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
-- **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
-- **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
-- **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-- **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
-- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
+The product is built on the open-source Medplum platform. The repository keeps the upstream `@medplum/*` package names
+and FHIR contracts for compatibility while applying the ClinicBuddy identity at the application layer.
+
+- **Clinical workspace** - Search, review, and edit standards-based patient and clinical data.
+- **Identity and access** - OAuth, OpenID, SMART-on-FHIR, project memberships, and access policies.
+- **Clinical automation** - Bots, questionnaires, subscriptions, and workflow tooling.
+- **Interoperability** - FHIR APIs plus HL7, DICOM, and integration packages.
+- **Reusable UI** - React components and hooks for extending ClinicBuddy safely.
 
 ## Docs
 
@@ -85,7 +87,7 @@ Here is a list of all the big technologies we use:
 #### Folder structure
 
 ```sh
-medplum/
+clinic-buddy/
 ├── packages
 │   ├── agent           # On-premise agent
 │   ├── app             # Frontend web app

@@ -22,6 +22,7 @@ import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
+import { getAppName } from '../utils/app';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
@@ -105,7 +106,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               onClick={props.navbarToggle}
               aria-expanded={opened}
               aria-controls="navbar"
-              aria-label="Medplum Logo"
+              aria-label={`${getAppName()} Logo`}
             >
               {props.logo}
             </UnstyledButton>

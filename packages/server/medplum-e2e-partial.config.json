@@ -1,0 +1,6 @@
+{
+  "port": 8104,
+  "baseUrl": "http://127.0.0.1:8104/",
+  "appBaseUrl": "http://127.0.0.1:3102/",
+  "storageBaseUrl": "http://127.0.0.1:8104/storage/"
+}

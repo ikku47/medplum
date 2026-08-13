@@ -9,9 +9,14 @@
       "dependsOn": ["^build"],
       "outputs": ["build/**", "dist/**", ".next/**", "!.next/cache/**"],
       "env": [
+        "CLINICBUDDY_COUNTRY",
+        "CLINICBUDDY_CURRENCY",
+        "CLINICBUDDY_DEFAULT_LOCALE",
         "MEDPLUM_BASE_URL",
+        "MEDPLUM_APP_NAME",
         "MEDPLUM_CLIENT_ID",
         "MEDPLUM_INTROSPECTION_URL",
+        "MEDPLUM_LOGO_URL",
         "MEDPLUM_REGISTER_ENABLED",
         "GOOGLE_CLIENT_ID",
         "RECAPTCHA_SITE_KEY"

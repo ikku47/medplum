@@ -1,6 +1,7 @@
-# Medplum App
+# ClinicBuddy
 
-This is the code for [https://app.medplum.com](https://app.medplum.com)
+ClinicBuddy is the branded clinical workspace built on the Medplum FHIR platform. The application name, logo, and
+primary color are customized here while the underlying `@medplum/*` packages remain compatible with upstream APIs.
 
 ## Deployment
 

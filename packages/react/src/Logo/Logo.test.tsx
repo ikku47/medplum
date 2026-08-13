@@ -16,7 +16,7 @@ describe('Logo', () => {
     const { Logo: LogoWithOverride } = await import('./Logo');
 
     render(<LogoWithOverride size={100} />);
-    const img = screen.getByAltText('Logo');
+    const img = screen.getByAltText('Medplum Logo');
     expect(img).toBeDefined();
     expect(img).toHaveAttribute('src', 'https://example.com/custom-logo.png');
     expect(img).toHaveStyle({ maxHeight: '100px' });

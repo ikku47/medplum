@@ -1,8 +1,10 @@
 {
   "name": "root",
   "version": "5.1.29",
+  "description": "ClinicBuddy healthcare workspace powered by Medplum",
   "private": true,
   "workspaces": [
+    "apps/*",
     "packages/*",
     "examples/*"
   ],
@@ -10,12 +12,14 @@
     "build": "turbo run build --filter=!@medplum/docs --filter=!@medplum/storybook --filter=!./examples/*",
     "build:all": "turbo run build",
     "build:docs": "turbo run build --filter=@medplum/docs",
-    "build:fast": "turbo run build --filter=@medplum/app --filter=@medplum/server",
+    "build:clinic": "turbo run build --filter=@clinicbuddy/clinic",
+    "build:fast": "turbo run build --filter=@clinicbuddy/clinic --filter=@medplum/app --filter=@medplum/server",
     "clean": "turbo run clean",
     "lint": "turbo run lint --filter=!@medplum/docs",
     "lint:fix": "turbo run lint:fix --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
-    "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
+    "dev:clinic": "npm run dev --workspace=@clinicbuddy/clinic",
+    "sort-package-json": "sort-package-json package.json \"apps/*/package.json\" \"packages/*/package.json\" \"examples/*/package.json\"",
     "test": "turbo run test --filter=!@medplum/docs"
   },
   "prettier": {

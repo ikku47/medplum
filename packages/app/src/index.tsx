@@ -31,7 +31,26 @@ export async function initApp(): Promise<void> {
   });
 
   const theme = createTheme({
+    primaryColor: 'clinical',
+    colors: {
+      clinical: [
+        '#e8faf7',
+        '#d4f2ed',
+        '#a9e2d9',
+        '#7bd1c4',
+        '#56c2b2',
+        '#3db8a6',
+        '#25a995',
+        '#128678',
+        '#0b6b66',
+        '#075450',
+      ],
+    },
+    primaryShade: { light: 8, dark: 5 },
+    defaultRadius: 'md',
+    fontFamily: '"Avenir Next", "Segoe UI", sans-serif',
     headings: {
+      fontFamily: '"Avenir Next", "Segoe UI", sans-serif',
       sizes: {
         h1: {
           fontSize: '1.125rem',

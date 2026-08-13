@@ -74,7 +74,7 @@ describe('App Index', () => {
     await waitFor(
       () => {
         expect(screen.getByRole('button', { name: 'User menu' })).toBeInTheDocument();
-        expect(screen.getByTitle('Medplum Logo')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'ClinicBuddy Logo' })).toBeInTheDocument();
       },
       { timeout: 5000 }
     );
